@@ -26,3 +26,7 @@ Thumbs.db
 
 # Streamlit temp and logs
 .streamlit/secrets.toml
+
+# Local planning docs
+Disease_DL_Predictor_Cursor_Plan.md
+*_Cursor_Plan.md
