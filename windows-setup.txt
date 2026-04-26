@@ -1,0 +1,135 @@
+Disease Predictor DL - Windows Setup (TensorFlow Safe)
+======================================================
+
+This setup was tested on Windows with Python 3.11 and TensorFlow.
+Important: Use Python 3.11.x to avoid TensorFlow wheel/version conflicts.
+
+------------------------------------------------------
+1) Install prerequisites
+------------------------------------------------------
+
+1. Install Git for Windows:
+   https://git-scm.com/download/win
+
+2. Install Python 3.11 (64-bit):
+   https://www.python.org/downloads/release/python-3119/
+   - While installing, enable "Add Python to PATH"
+
+3. Optional but recommended:
+   - Install Microsoft C++ Build Tools (if any package needs local build)
+
+------------------------------------------------------
+2) Clone project
+------------------------------------------------------
+
+Open PowerShell and run:
+
+git clone https://github.com/Saptesh27/disease-predictor-dl.git
+cd disease-predictor-dl/disease_dl_predictor
+
+------------------------------------------------------
+3) Create and activate virtual environment
+------------------------------------------------------
+
+Use Python 3.11 specifically:
+
+py -3.11 -m venv .venv
+.venv\Scripts\Activate.ps1
+
+If PowerShell blocks activation:
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.venv\Scripts\Activate.ps1
+
+Verify Python version:
+python --version
+
+Expected: Python 3.11.x
+
+------------------------------------------------------
+4) Install dependencies (TensorFlow first)
+------------------------------------------------------
+
+Upgrade pip:
+python -m pip install --upgrade pip
+
+Install TensorFlow first:
+python -m pip install tensorflow==2.21.0
+
+Install remaining project dependencies:
+python -m pip install -r requirements.txt
+
+------------------------------------------------------
+5) Run project setup
+------------------------------------------------------
+
+python setup.py
+
+This will:
+- create required folders
+- download spaCy model: en_core_web_sm
+
+------------------------------------------------------
+6) Dataset placement
+------------------------------------------------------
+
+Download dataset from:
+https://www.kaggle.com/datasets/itachi9604/disease-symptom-description-dataset
+
+Place file here:
+disease_dl_predictor\data\dataset.csv
+
+------------------------------------------------------
+7) Train models
+------------------------------------------------------
+
+python train.py
+
+Expected outputs:
+- saved_models\bilstm\model.h5
+- saved_models\cnn\model.h5
+- data\tokenizer.pkl
+- data\label_encoder.pkl
+- data\training_history.pkl
+
+------------------------------------------------------
+8) Run Streamlit app
+------------------------------------------------------
+
+streamlit run app.py
+
+Open browser:
+http://localhost:8501
+
+------------------------------------------------------
+9) Quick troubleshooting
+------------------------------------------------------
+
+Issue: No matching distribution for tensorflow
+Fix:
+- ensure Python is 3.11.x (not 3.14)
+- recreate venv:
+  deactivate
+  rmdir /s /q .venv
+  py -3.11 -m venv .venv
+  .venv\Scripts\Activate.ps1
+  python -m pip install --upgrade pip
+  python -m pip install tensorflow==2.21.0
+  python -m pip install -r requirements.txt
+
+Issue: source code string cannot contain null bytes
+Fix:
+- re-save affected .py file as UTF-8 in editor
+- or run:
+  python -m compileall .
+
+Issue: StreamlitDuplicateElementId
+Fix:
+- ensure unique key=... for duplicated widgets (text_area/button)
+
+------------------------------------------------------
+10) Daily run commands
+------------------------------------------------------
+
+cd disease-predictor-dl/disease_dl_predictor
+.venv\Scripts\Activate.ps1
+streamlit run app.py
