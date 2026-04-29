@@ -31,24 +31,28 @@ def main():
     evaluator = Evaluator(trainer.bilstm, trainer.cnn, trainer.data)
     results = evaluator.compare_both(trainer.data["X_test"], trainer.data["y_test"])
 
-    print("\n" + "=" * 50)
-    print("MODEL COMPARISON RESULTS")
-    print("=" * 50)
-    print(f"{'Metric':<15} {'BiLSTM':>10} {'CNN':>10} {'Winner':>10}")
-    print("-" * 50)
-    for metric in ["accuracy", "f1"]:
+    with open(settings.EVAL_RESULTS_PATH, "wb") as f:
+        pickle.dump(results, f)
+    print(f"Evaluation results saved to: {settings.EVAL_RESULTS_PATH}")
+
+    print("\n" + "=" * 60)
+    print("FINAL MODEL COMPARISON")
+    print("=" * 60)
+    print(f"{'Metric':<20} {'BiLSTM':>12} {'CNN':>12} {'Winner':>10}")
+    print("-" * 60)
+    metrics = ["accuracy", "precision", "recall", "f1"]
+    labels = ["Accuracy", "Precision", "Recall", "F1-Score"]
+    for metric, label in zip(metrics, labels):
         b = results["bilstm"][metric]
         c = results["cnn"][metric]
         winner = "BiLSTM" if b >= c else "CNN"
-        label = "F1-Score" if metric == "f1" else "Accuracy"
-        print(f"{label:<15} {b:>9.2%} {c:>9.2%} {winner:>10}")
+        marker = "*"
+        print(f"{label:<20} {b:>10.2f}% {c:>10.2f}% {marker} {winner:>7}")
+    print("=" * 60)
+    print(f"Overall Winner: {results['winner']}")
+    print("=" * 60)
 
-    history_payload = {
-        "bilstm_history": bilstm_history,
-        "cnn_history": cnn_history,
-        "metrics": results,
-        "training_time": {"bilstm_seconds": bilstm_time, "cnn_seconds": cnn_time},
-    }
+    history_payload = {"bilstm": bilstm_history, "cnn": cnn_history}
     with open(settings.TRAINING_HISTORY_PATH, "wb") as f:
         pickle.dump(history_payload, f)
 

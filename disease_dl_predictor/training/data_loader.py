@@ -35,6 +35,12 @@ class DataLoader:
         y = df["Disease"].astype(str).tolist()
         return X, y
 
+    def deduplicate_samples(self, X: list[str], y: list[str]) -> tuple[list[str], list[str]]:
+        """Remove identical symptom-text + disease duplicates to prevent train/test leakage."""
+        pairs = pd.DataFrame({"text": X, "label": y}).drop_duplicates(subset=["text", "label"])
+        print(f"Deduplicated samples: {len(X)} -> {len(pairs)}")
+        return pairs["text"].tolist(), pairs["label"].tolist()
+
     def encode_labels(self, y: list[str]) -> tuple[list[int], LabelEncoder, int]:
         # LabelEncoder maps disease names to integer ids and lets us decode predictions later.
         encoder = LabelEncoder()
@@ -54,18 +60,55 @@ class DataLoader:
         return X_pad, tokenizer
 
     def train_test_split_data(self, X_pad, y_enc):
+        n_samples = len(y_enc)
+        n_classes = len(set(y_enc))
+        # Stratified split requires at least one sample per class in each split.
+        min_test_ratio = n_classes / n_samples
+        test_ratio = max(settings.TEST_SPLIT, min_test_ratio)
+        if test_ratio >= 0.5:
+            test_ratio = 0.5
+        if test_ratio != settings.TEST_SPLIT:
+            print(
+                f"Adjusted TEST_SPLIT from {settings.TEST_SPLIT:.2f} to {test_ratio:.3f} "
+                f"for stratification across {n_classes} classes."
+            )
+
         X_train_val, X_test, y_train_val, y_test = train_test_split(
-            X_pad, y_enc, test_size=settings.TEST_SPLIT, random_state=settings.RANDOM_SEED, stratify=y_enc
+            X_pad,
+            y_enc,
+            test_size=test_ratio,
+            random_state=settings.RANDOM_SEED,
+            stratify=y_enc,
         )
-        val_ratio = settings.VALIDATION_SPLIT / (1 - settings.TEST_SPLIT)
-        X_train, X_val, y_train, y_val = train_test_split(
-            X_train_val, y_train_val, test_size=val_ratio, random_state=settings.RANDOM_SEED, stratify=y_train_val
-        )
+
+        val_ratio = settings.VALIDATION_SPLIT / (1 - test_ratio)
+        if val_ratio >= 0.5:
+            val_ratio = 0.5
+
+        # Validation split can fail if remaining class counts are too small; fallback to non-stratified split.
+        try:
+            X_train, X_val, y_train, y_val = train_test_split(
+                X_train_val,
+                y_train_val,
+                test_size=val_ratio,
+                random_state=settings.RANDOM_SEED,
+                stratify=y_train_val,
+            )
+        except ValueError:
+            print("Validation stratification not feasible with deduplicated data. Falling back to non-stratified split.")
+            X_train, X_val, y_train, y_val = train_test_split(
+                X_train_val,
+                y_train_val,
+                test_size=val_ratio,
+                random_state=settings.RANDOM_SEED,
+                stratify=None,
+            )
         return X_train, X_val, X_test, y_train, y_val, y_test
 
     def prepare_all(self) -> dict:
         df = self.load_raw_data()
         X, y = self.prepare_features(df)
+        X, y = self.deduplicate_samples(X, y)
         y_enc, encoder, num_classes = self.encode_labels(y)
         X_pad, tokenizer = self.tokenize_text(X)
         X_train, X_val, X_test, y_train, y_val, y_test = self.train_test_split_data(X_pad, y_enc)

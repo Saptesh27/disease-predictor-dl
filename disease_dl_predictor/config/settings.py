@@ -16,6 +16,7 @@ class Settings:
     TOKENIZER_PATH: Path = BASE_DIR / "data" / "tokenizer.pkl"
     LABEL_ENCODER_PATH: Path = BASE_DIR / "data" / "label_encoder.pkl"
     TRAINING_HISTORY_PATH: Path = BASE_DIR / "data" / "training_history.pkl"
+    EVAL_RESULTS_PATH: Path = BASE_DIR / "data" / "eval_results.pkl"
 
     # Text Processing
     MAX_SEQUENCE_LENGTH: int = 100
